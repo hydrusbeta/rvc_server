@@ -134,5 +134,23 @@ RUN mv /root/hay_say/temp_downloads/hubert/* /root/hay_say/rvc/ && \
     mv /root/hay_say/temp_downloads/pretrained/* /root/hay_say/rvc/pretrained/ && \
     mv /root/hay_say/temp_downloads/uvr5_weights/* /root/hay_say/rvc/uvr5_weights/
 
+# Modify RVC's code to add a command-line option for preventing its gradio server from automatically starting
+RUN sed -i '60 i\            cmd_opts.commandlinemode,\n' ~/hay_say/rvc/config.py && \
+    sed -i '50 i\        parser.add_argument(\n            "--commandlinemode", action="store_true", help="Do not automatically launch the server when importing infer-web.py"\n        )\n' ~/hay_say/rvc/config.py && \
+    sed -i '31 i\            self.commandlinemode,' ~/hay_say/rvc/config.py && \
+    sed -i '1143,1842 s\^\    \' ~/hay_say/rvc/infer-web.py && \
+    sed -i '1143 i\if not config.commandlinemode:\n' ~/hay_say/rvc/infer-web.py
+
+# Create directories that are used by the Hay Say interface code
+RUN mkdir -p ~/hay_say/rvc/input/ && \
+    mkdir -p ~/hay_say/rvc/output/
+
+# Add command line functionality to RVC
+RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
+    cp ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
+
 # Todo: Download the Hay Say interface code
+RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
+
 # Todo: Execute the Hay Say interface code
+CMD ["/bin/sh", "-c", "/root/hay_say/.venvs/rvc_server/bin/python /root/hay_say/rvc_server/main.py"]
