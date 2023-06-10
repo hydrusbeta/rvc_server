@@ -57,9 +57,6 @@ def generate() -> (str, int):
     return json.dumps(response, sort_keys=True, indent=4), code
 
 
-enum_mapper = {'crepe': 'crepe', 'harvest': 'harvest', 'parselmouth': 'pm'}
-
-
 def parse_inputs():
     schema = {
         'type': 'object',
@@ -93,7 +90,7 @@ def parse_inputs():
     pitch_shift = request.json['Options']['Pitch Shift']
     f0_method = request.json['Options']['f0 Extraction Method']
     index_ratio = request.json['Options']['Index Ratio']
-    filter_radius = request.json['Options']['Filter Radius']
+    filter_radius = request.json['Options'].get('Filter Radius')
     rms_mix_ratio = request.json['Options']['Voice Envelope Mix Ratio']
     protect = request.json['Options']['Voiceless Consonants Protection Ratio']
     output_filename_sans_extension = request.json['Output File']
@@ -123,22 +120,31 @@ def copy_input_audio(input_filename_sans_extension):
         raise Exception("Unable to copy file from Hay Say's audio cache to rvc's raw directory.") from e
 
 
+# Hay Say displays the option 'parselmouth', but RVC expects 'pm'.
+# Map display labels to command line options using this dictionary.
+f0_command_line_option_from_display_option = {'crepe': 'crepe',
+                                              'harvest': 'harvest',
+                                              'parselmouth': 'pm'}
+
+
 def execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
                     rms_mix_ratio, protect, output_filename_sans_extension):
     arguments = [
         '--voice', character + WEIGHTS_FILE_EXTENSION,
-        '--sid', str(0),
         '--input_filepath', os.path.join(INPUT_COPY_FOLDER, input_filename_sans_extension + CACHE_EXTENSION),
+        '--output_filepath', os.path.join(OUTPUT_COPY_FOLDER, output_filename_sans_extension + CACHE_EXTENSION),
+        # Optional Parameters
+        '--sid', str(0),
         '--transpose', str(pitch_shift),
-        '--f0_method', f0_method,
+        '--f0_method', f0_command_line_option_from_display_option[f0_method],
         '--index_filepath', get_index_path(character),
         '--index_ratio', str(index_ratio),
-        '--filter_radius', str(filter_radius),
+        *(['--filter_radius', str(filter_radius)] if filter_radius else [None, None]),
         '--resample_rate', str(0),
         '--rms_mix_ratio', str(rms_mix_ratio),
         '--protect', str(protect),
-        '--output_filepath', os.path.join(OUTPUT_COPY_FOLDER, output_filename_sans_extension + CACHE_EXTENSION)
     ]
+    arguments = [argument for argument in arguments if argument]  # Removes all "None" objects in the list.
     subprocess.run([PYTHON_EXECUTABLE, INFERENCE_SCRIPT_PATH, *arguments])
 
 
