@@ -39,8 +39,6 @@ RUN mkdir -p ~/hay_say/temp_downloads/pretrained/ && \
     wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G40k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
     wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G48k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/
 
-# Todo: download the v2 models to ~/hay_say/temp_downloads/pretrained_v2
-
 # Download the UVR5 weights
 RUN mkdir -p ~/hay_say/temp_downloads/uvr5_weights/ && \
     mkdir -p ~/hay_say/temp_downloads/uvr5_weights/onnx_dereverb_By_FoxJoy/ && \
@@ -149,8 +147,8 @@ RUN mkdir -p ~/hay_say/rvc/input/ && \
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
     cp ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
 
-# Todo: Download the Hay Say interface code
+# Download the Hay Say interface code
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
 
-# Todo: Execute the Hay Say interface code
+# Execute the Hay Say interface code
 CMD ["/bin/sh", "-c", "/root/hay_say/.venvs/rvc_server/bin/python /root/hay_say/rvc_server/main.py"]
