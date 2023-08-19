@@ -146,7 +146,7 @@ RUN mkdir -p ~/hay_say/rvc/input/ && \
 
 # Add command line functionality to RVC
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
-    cp ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
+    mv ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
 
 # Download the Hay Say interface code
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
