@@ -93,7 +93,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
     pyasn1==0.5.0 \
     pyasn1-modules==0.3.0 \
     pydub==0.25.1 \
-    pyworld==0.3.3 \
+    pyworld==0.3.4 \
     PyYAML==6.0 \
     resampy==0.4.2 \
     scipy==1.9.3 \
