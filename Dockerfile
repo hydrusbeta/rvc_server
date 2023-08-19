@@ -113,8 +113,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
 
 # Install the dependencies for the Hay Say interface code.
 RUN ~/hay_say/.venvs/rvc_server/bin/pip install --no-cache-dir \
-    Flask==2.3.2 \
-    hay-say-common==0.1.0 \
+    hay-say-common==0.1.4 \
     jsonschema==4.17.3
 
 # Expose port 6578, the port that Hay Say uses for RVC.
@@ -123,9 +122,11 @@ EXPOSE 6578
 EXPOSE 7865
 
 # Download RVC and checkout a specific commit that is known to work with this Docker file and with Hay Say.
+# Important! The RVC code is modified a little later in this Dockerfile. If you update the commit hash here, be sure to
+# update the later section too, if needed (e.g. line numbers might change).
 RUN git clone -b main --single-branch -q https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI ~/hay_say/rvc
 WORKDIR /root/hay_say/rvc
-RUN git reset --hard 99404baf945c6842df50656f06b494a14341a347
+RUN git reset --hard d97767494c83e01083030ebe21f7f4b296e41fab
 
 # Move the pretrained models to the expected directories.
 RUN mv /root/hay_say/temp_downloads/hubert/* /root/hay_say/rvc/ && \
@@ -136,8 +137,8 @@ RUN mv /root/hay_say/temp_downloads/hubert/* /root/hay_say/rvc/ && \
 RUN sed -i '60 i\            cmd_opts.commandlinemode,\n' ~/hay_say/rvc/config.py && \
     sed -i '50 i\        parser.add_argument(\n            "--commandlinemode", action="store_true", help="Do not automatically launch the server when importing infer-web.py"\n        )\n' ~/hay_say/rvc/config.py && \
     sed -i '31 i\            self.commandlinemode,' ~/hay_say/rvc/config.py && \
-    sed -i '1143,1842 s\^\    \' ~/hay_say/rvc/infer-web.py && \
-    sed -i '1143 i\if not config.commandlinemode:\n' ~/hay_say/rvc/infer-web.py
+    sed -i '1304,1991 s\^\    \' ~/hay_say/rvc/infer-web.py && \
+    sed -i '1304 i\if not config.commandlinemode:\n' ~/hay_say/rvc/infer-web.py
 
 # Create directories that are used by the Hay Say interface code
 RUN mkdir -p ~/hay_say/rvc/input/ && \
@@ -145,7 +146,7 @@ RUN mkdir -p ~/hay_say/rvc/input/ && \
 
 # Add command line functionality to RVC
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
-    cp ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
+    mv ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
 
 # Download the Hay Say interface code
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server

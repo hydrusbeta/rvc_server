@@ -1,5 +1,5 @@
 from hay_say_common import ROOT_DIR, PREPROCESSED_DIR, OUTPUT_DIR, CACHE_EXTENSION, get_model_path, clean_up, \
-    construct_full_error_message, read_audio, save_audio_to_cache, create_link
+    construct_full_error_message, read_audio, save_audio_to_cache, create_link, get_single_file_with_extension
 
 from flask import Flask, request
 import jsonschema
@@ -107,7 +107,7 @@ def link_model_path(character):
     """Create a symbolic link to the model file in the location where RVC expects to find it."""
     symlink_file = os.path.join(WEIGHTS_FOLDER, character + WEIGHTS_FILE_EXTENSION)
     character_dir = get_model_path(ARCHITECTURE_NAME, character)
-    weight_file = os.path.join(character_dir, character + WEIGHTS_FILE_EXTENSION)
+    weight_file = get_single_file_with_extension(character_dir, WEIGHTS_FILE_EXTENSION)
     create_link(weight_file, symlink_file)
 
 
@@ -129,6 +129,7 @@ f0_command_line_option_from_display_option = {'crepe': 'crepe',
 
 def execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
                     rms_mix_ratio, protect, output_filename_sans_extension):
+    index_path = get_index_path(character)
     arguments = [
         '--voice', character + WEIGHTS_FILE_EXTENSION,
         '--input_filepath', os.path.join(INPUT_COPY_FOLDER, input_filename_sans_extension + CACHE_EXTENSION),
@@ -137,7 +138,7 @@ def execute_program(character, input_filename_sans_extension, pitch_shift, f0_me
         '--sid', str(0),
         '--transpose', str(pitch_shift),
         '--f0_method', f0_command_line_option_from_display_option[f0_method],
-        '--index_filepath', get_index_path(character),
+        *(['--index_filepath', index_path] if index_path else [None, None]),
         '--index_ratio', str(index_ratio),
         *(['--filter_radius', str(filter_radius)] if filter_radius else [None, None]),
         '--resample_rate', str(0),
@@ -150,7 +151,12 @@ def execute_program(character, input_filename_sans_extension, pitch_shift, f0_me
 
 def get_index_path(character):
     character_dir = get_model_path(ARCHITECTURE_NAME, character)
-    return os.path.join(character_dir, character + INDEX_FILE_EXTENSION)
+    index_path = None
+    try:
+        index_path = get_single_file_with_extension(character_dir, INDEX_FILE_EXTENSION)
+    except Exception as e:
+        print('No ' + INDEX_FILE_EXTENSION + ' file was found in ' + character_dir, flush=True)
+    return index_path
 
 
 def copy_output(output_filename_sans_extension):
