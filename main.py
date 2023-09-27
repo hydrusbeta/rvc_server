@@ -1,5 +1,6 @@
 from hay_say_common import ROOT_DIR, PREPROCESSED_DIR, OUTPUT_DIR, CACHE_EXTENSION, get_model_path, clean_up, \
-    construct_full_error_message, read_audio, save_audio_to_cache, create_link, get_single_file_with_extension
+    construct_full_error_message, read_audio, save_audio_to_cache, create_link, get_single_file_with_extension, \
+    select_hardware
 
 from flask import Flask, request
 import jsonschema
@@ -34,11 +35,11 @@ def generate() -> (str, int):
     message = ""
     try:
         character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius, rms_mix_ratio, \
-            protect, output_filename_sans_extension = parse_inputs()
+            protect, gpu_id, output_filename_sans_extension = parse_inputs()
         link_model_path(character)
         copy_input_audio(input_filename_sans_extension)
         execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
-                        rms_mix_ratio, protect, output_filename_sans_extension)
+                        rms_mix_ratio, protect, gpu_id, output_filename_sans_extension)
         copy_output(output_filename_sans_extension)
         clean_up(get_temp_files())
     except BadInputException:
@@ -65,7 +66,9 @@ def parse_inputs():
                 'type': 'object',
                 'properties': {
                     'User Audio': {'type': 'string'}
-                }
+                },
+                'additionalProperties': False,
+                'required': ['User Audio']
             },
             'Options': {
                 'type': 'object',
@@ -77,10 +80,16 @@ def parse_inputs():
                     'Filter Radius': {'type': 'integer', 'minimum': 0},
                     'Voice Envelepe Mix Ratio': {'type': 'number', 'minimum': 0, 'maximum': 1},
                     'Voiceless Consonants Protection Ratio': {'type': 'number', 'minimum': 0, 'maximum': 0.5},
-                }
+                },
+                'additionalProperties': False,
+                'required': ['Character', 'Pitch Shift', 'f0 Extraction Method', 'Index Ratio',
+                             'Voice Envelope Mix Ratio', 'Voiceless Consonants Protection Ratio']
             },
+            'GPU ID': {'type': ['string', 'integer']},
             'Output File': {'type': 'string'}
-        }
+        },
+        'additionalProperties': False,
+        'required': ['Inputs', 'Options', 'GPU ID', 'Output File']
     }
 
     jsonschema.validate(instance=request.json, schema=schema)
@@ -93,10 +102,11 @@ def parse_inputs():
     filter_radius = request.json['Options'].get('Filter Radius')
     rms_mix_ratio = request.json['Options']['Voice Envelope Mix Ratio']
     protect = request.json['Options']['Voiceless Consonants Protection Ratio']
+    gpu_id = request.json['GPU ID']
     output_filename_sans_extension = request.json['Output File']
 
     return character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius, \
-        rms_mix_ratio, protect, output_filename_sans_extension
+        rms_mix_ratio, protect, gpu_id, output_filename_sans_extension
 
 
 class BadInputException(Exception):
@@ -128,7 +138,7 @@ f0_command_line_option_from_display_option = {'crepe': 'crepe',
 
 
 def execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
-                    rms_mix_ratio, protect, output_filename_sans_extension):
+                    rms_mix_ratio, protect, gpu_id, output_filename_sans_extension):
     index_path = get_index_path(character)
     arguments = [
         '--voice', character + WEIGHTS_FILE_EXTENSION,
@@ -146,7 +156,8 @@ def execute_program(character, input_filename_sans_extension, pitch_shift, f0_me
         '--protect', str(protect),
     ]
     arguments = [argument for argument in arguments if argument]  # Removes all "None" objects in the list.
-    subprocess.run([PYTHON_EXECUTABLE, INFERENCE_SCRIPT_PATH, *arguments])
+    env = select_hardware(gpu_id)
+    subprocess.run([PYTHON_EXECUTABLE, INFERENCE_SCRIPT_PATH, *arguments], env=env)
 
 
 def get_index_path(character):
