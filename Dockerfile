@@ -113,7 +113,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
 
 # Install the dependencies for the Hay Say interface code.
 RUN ~/hay_say/.venvs/rvc_server/bin/pip install --no-cache-dir \
-    hay-say-common==0.2.0 \
+    hay_say_common==1.0.1 \
     jsonschema==4.17.3
 
 # Expose port 6578, the port that Hay Say uses for RVC.
@@ -152,4 +152,4 @@ RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_comma
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
 
 # Execute the Hay Say interface code
-CMD ["/bin/sh", "-c", "/root/hay_say/.venvs/rvc_server/bin/python /root/hay_say/rvc_server/main.py"]
+CMD ["/bin/sh", "-c", "/root/hay_say/.venvs/rvc_server/bin/python /root/hay_say/rvc_server/main.py --cache_implementation file"]
