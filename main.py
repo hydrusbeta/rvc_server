@@ -36,7 +36,7 @@ def register_methods(cache):
         message = ""
         try:
             character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius, rms_mix_ratio, \
-                protect, gpu_id, output_filename_sans_extension, session_id = parse_inputs()
+                protect, output_filename_sans_extension, gpu_id, session_id = parse_inputs()
             link_model_path(character)
             copy_input_audio(input_filename_sans_extension, session_id)
             execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
@@ -100,12 +100,12 @@ def register_methods(cache):
         filter_radius = request.json['Options'].get('Filter Radius')
         rms_mix_ratio = request.json['Options']['Voice Envelope Mix Ratio']
         protect = request.json['Options']['Voiceless Consonants Protection Ratio']
-        gpu_id = request.json['GPU ID']
         output_filename_sans_extension = request.json['Output File']
+        gpu_id = request.json['GPU ID']
         session_id = request.json['Session ID']
 
         return character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius, \
-            rms_mix_ratio, protect, gpu_id, output_filename_sans_extension, session_id
+            rms_mix_ratio, protect, output_filename_sans_extension, gpu_id, session_id
 
 
     class BadInputException(Exception):
@@ -181,7 +181,7 @@ def register_methods(cache):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(prog='main.py', description='A webservice interface for TTS inference with RVC')
+    parser = argparse.ArgumentParser(prog='main.py', description='A webservice interface for voice conversion with RVC')
     parser.add_argument('--cache_implementation', default='file', choices=cache_implementation_map.keys(), help='Selects an implementation for the audio cache, e.g. saving them to files or to a database.')
     return parser.parse_args()
 
