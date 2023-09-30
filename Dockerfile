@@ -58,14 +58,15 @@ RUN python3.9 -m venv ~/hay_say/.venvs/rvc; \
 
 # Python virtual environments do not come with wheel, so we must install it. Upgrade pip while
 # we're at it to handle modules that use PEP 517.
-RUN ~/hay_say/.venvs/rvc/bin/pip install --no-cache-dir --upgrade pip wheel; \
-    ~/hay_say/.venvs/rvc_server/bin/pip install --no-cache-dir --upgrade pip wheel
+RUN ~/hay_say/.venvs/rvc/bin/pip install --timeout=300 --no-cache-dir --upgrade pip wheel; \
+    ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir --upgrade pip wheel
 
 # Install all python dependencies for RVC.
 # Note: This is done *before* cloning the repository because the dependencies are likely to change less often than the
 # RVC code itself. Cloning the repo after installing the requirements helps the Docker cache optimize build time.
 # See https://docs.docker.com/build/cache
 RUN ~/hay_say/.venvs/rvc/bin/pip install \
+    --timeout=300 \
     --no-cache-dir \
     absl-py==1.4.0 \
     audioread==3.0.0 \
@@ -112,9 +113,9 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
     Werkzeug==2.3.4
 
 # Install the dependencies for the Hay Say interface code.
-RUN ~/hay_say/.venvs/rvc_server/bin/pip install --no-cache-dir \
+RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
     hay_say_common==1.0.1 \
-    jsonschema==4.17.3
+    jsonschema==4.19.1
 
 # Expose port 6578, the port that Hay Say uses for RVC.
 # Also expose port 7865, in case someone wants to use the original RVC UI.

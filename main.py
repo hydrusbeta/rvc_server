@@ -1,16 +1,16 @@
+import argparse
+import base64
+import json
+import os.path
+import subprocess
+import traceback
+
+import jsonschema
 import soundfile
+from flask import Flask, request
 from hay_say_common import *
 from hay_say_common.cache import Stage
-
-from flask import Flask, request
-import jsonschema
-import argparse
-import os.path
-import traceback
-import json
-import subprocess
-import base64
-
+from jsonschema import ValidationError
 
 ARCHITECTURE_NAME = 'rvc'
 ARCHITECTURE_ROOT = os.path.join(ROOT_DIR, ARCHITECTURE_NAME)
@@ -87,10 +87,13 @@ def register_methods(cache):
                 'GPU ID': {'type': ['string', 'integer']},
                 'Session ID' : {'type': ['string', 'null']}
             },
-            'required': ['Inputs', 'Options', 'GPU ID', 'Output File', 'Session ID']
+            'required': ['Inputs', 'Options', 'Output File', 'GPU ID', 'Session ID']
         }
 
-        jsonschema.validate(instance=request.json, schema=schema)
+        try:
+            jsonschema.validate(instance=request.json, schema=schema)
+        except ValidationError as e:
+            raise BadInputException(e.message)
 
         input_filename_sans_extension = request.json['Inputs']['User Audio']
         character = request.json['Options']['Character']
