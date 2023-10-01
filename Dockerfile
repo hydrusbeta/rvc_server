@@ -114,7 +114,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
 
 # Install the dependencies for the Hay Say interface code.
 RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
-    hay_say_common==1.0.1 \
+    hay_say_common==1.0.2 \
     jsonschema==4.19.1
 
 # Expose port 6578, the port that Hay Say uses for RVC.
