@@ -4,7 +4,7 @@
 # capability 3.5 through 9.0.
 FROM nvidia/cuda:11.8.0-base-ubuntu20.04
 ENV TZ=Etc/GMT
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone.
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt update && apt install -y --no-install-recommends \
     ffmpeg \
     gcc \
@@ -114,7 +114,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
 
 # Install the dependencies for the Hay Say interface code.
 RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
-    hay_say_common==1.0.2 \
+    hay_say_common==1.0.7 \
     jsonschema==4.19.1
 
 # Expose port 6578, the port that Hay Say uses for RVC.
