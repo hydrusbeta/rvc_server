@@ -5,22 +5,22 @@ import os.path
 import subprocess
 import traceback
 
+import hay_say_common as hsc
 import jsonschema
 import soundfile
 from flask import Flask, request
-from hay_say_common import *
 from hay_say_common.cache import Stage
 from jsonschema import ValidationError
 
 ARCHITECTURE_NAME = 'rvc'
-ARCHITECTURE_ROOT = os.path.join(ROOT_DIR, ARCHITECTURE_NAME)
+ARCHITECTURE_ROOT = os.path.join(hsc.ROOT_DIR, ARCHITECTURE_NAME)
 INPUT_COPY_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'input')
 OUTPUT_COPY_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'output')
 WEIGHTS_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'weights')
 INDICES_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'logs')
 TEMP_FILE_EXTENSION = '.flac'
 
-PYTHON_EXECUTABLE = os.path.join(ROOT_DIR, '.venvs', ARCHITECTURE_NAME, 'bin', 'python')
+PYTHON_EXECUTABLE = os.path.join(hsc.ROOT_DIR, '.venvs', ARCHITECTURE_NAME, 'bin', 'python')
 INFERENCE_SCRIPT_PATH = os.path.join(ARCHITECTURE_ROOT, 'command_line_interface.py')
 
 INDEX_FILE_EXTENSION = '.index'
@@ -42,13 +42,13 @@ def register_methods(cache):
             execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
                             rms_mix_ratio, protect, gpu_id, output_filename_sans_extension)
             copy_output(output_filename_sans_extension, session_id)
-            clean_up(get_temp_files())
+            hsc.clean_up(get_temp_files())
         except BadInputException:
             code = 400
             message = traceback.format_exc()
         except Exception:
             code = 500
-            message = construct_full_error_message(INPUT_COPY_FOLDER, get_temp_files())
+            message = hsc.construct_full_error_message(INPUT_COPY_FOLDER, get_temp_files())
 
         # The message may contain quotes and curly brackets which break JSON syntax, so base64-encode the message.
         message = base64.b64encode(bytes(message, 'utf-8')).decode('utf-8')
@@ -60,7 +60,7 @@ def register_methods(cache):
 
     @app.route('/gpu-info', methods=['GET'])
     def get_gpu_info():
-        return get_gpu_info_from_another_venv(PYTHON_EXECUTABLE)
+        return hsc.get_gpu_info_from_another_venv(PYTHON_EXECUTABLE)
 
     def parse_inputs():
         schema = {
@@ -122,9 +122,9 @@ def register_methods(cache):
     def link_model_path(character):
         """Create a symbolic link to the model file in the location where RVC expects to find it."""
         symlink_file = os.path.join(WEIGHTS_FOLDER, character + WEIGHTS_FILE_EXTENSION)
-        character_dir = get_model_path(ARCHITECTURE_NAME, character)
-        weight_file = get_single_file_with_extension(character_dir, WEIGHTS_FILE_EXTENSION)
-        create_link(weight_file, symlink_file)
+        character_dir = hsc.character_dir(ARCHITECTURE_NAME, character)
+        weight_file = hsc.get_single_file_with_extension(character_dir, WEIGHTS_FILE_EXTENSION)
+        hsc.create_link(weight_file, symlink_file)
 
 
     def copy_input_audio(input_filename_sans_extension, session_id):
@@ -162,22 +162,22 @@ def register_methods(cache):
             '--protect', str(protect),
         ]
         arguments = [argument for argument in arguments if argument]  # Removes all "None" objects in the list.
-        env = select_hardware(gpu_id)
+        env = hsc.select_hardware(gpu_id)
         subprocess.run([PYTHON_EXECUTABLE, INFERENCE_SCRIPT_PATH, *arguments], env=env)
 
 
     def get_index_path(character):
-        character_dir = get_model_path(ARCHITECTURE_NAME, character)
+        character_dir = hsc.character_dir(ARCHITECTURE_NAME, character)
         index_path = None
         try:
-            index_path = get_single_file_with_extension(character_dir, INDEX_FILE_EXTENSION)
+            index_path = hsc.get_single_file_with_extension(character_dir, INDEX_FILE_EXTENSION)
         except Exception as e:
             print('No ' + INDEX_FILE_EXTENSION + ' file was found in ' + character_dir, flush=True)
         return index_path
 
 
     def copy_output(output_filename_sans_extension, session_id):
-        array_output, sr_output = read_audio(os.path.join(OUTPUT_COPY_FOLDER,
+        array_output, sr_output = hsc.read_audio(os.path.join(OUTPUT_COPY_FOLDER,
                                                           output_filename_sans_extension + TEMP_FILE_EXTENSION))
         cache.save_audio_to_cache(Stage.OUTPUT, session_id, output_filename_sans_extension, array_output, sr_output)
 
@@ -189,12 +189,12 @@ def register_methods(cache):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='main.py', description='A webservice interface for voice conversion with RVC')
-    parser.add_argument('--cache_implementation', default='file', choices=cache_implementation_map.keys(), help='Selects an implementation for the audio cache, e.g. saving them to files or to a database.')
+    parser.add_argument('--cache_implementation', default='file', choices=hsc.cache_implementation_map.keys(), help='Selects an implementation for the audio cache, e.g. saving them to files or to a database.')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_arguments()
-    cache = select_cache_implementation(args.cache_implementation)
+    cache = hsc.select_cache_implementation(args.cache_implementation)
     register_methods(cache)
     app.run(host='0.0.0.0', port=6578)
