@@ -18,39 +18,50 @@ RUN apt update && apt install -y --no-install-recommends \
 # Enable UTF-8 so we can download files with Chinese characters in the filename.
 RUN sed -i '/^#.* en_US.UTF-8.* /s/^#//' /etc/locale.gen && \
     locale-gen
+
+# Switch to a limited user
+ARG LIMITED_USER=luna
+RUN useradd --create-home --shell /bin/bash $LIMITED_USER
+USER $LIMITED_USER
+
+# Some Docker directives (such as COPY and WORKDIR) and linux command options (such as wget's directory-prefix option)
+# do not expand the tilde (~) character to /home/<user>, so define a temporary variable to use instead.
+ARG HOME_DIR=/home/$LIMITED_USER
+
+# Another step for enabling UTF-8
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8
 
 # Download the pretrained Hubert model.
 RUN mkdir -p ~/hay_say/temp_downloads/hubert/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt --directory-prefix=/root/hay_say/temp_downloads/hubert/
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt --directory-prefix=$HOME_DIR/hay_say/temp_downloads/hubert/
 
 # Download the RVC pretrained models.
 RUN mkdir -p ~/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D32k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D40k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D48k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/G32k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/G40k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/G48k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0D32k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0D40k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0D48k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G32k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G40k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G48k.pth --directory-prefix=/root/hay_say/temp_downloads/pretrained/
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D32k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D40k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D48k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/G32k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/G40k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/G48k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0D32k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0D40k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0D48k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G32k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G40k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/f0G48k.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/pretrained/
 
 # Download the UVR5 weights
 RUN mkdir -p ~/hay_say/temp_downloads/uvr5_weights/ && \
     mkdir -p ~/hay_say/temp_downloads/uvr5_weights/onnx_dereverb_By_FoxJoy/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP2-%E4%BA%BA%E5%A3%B0vocals%2B%E9%9D%9E%E4%BA%BA%E5%A3%B0instrumentals.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP2_all_vocals.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP3_all_vocals.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP5-%E4%B8%BB%E6%97%8B%E5%BE%8B%E4%BA%BA%E5%A3%B0vocals%2B%E5%85%B6%E4%BB%96instrumentals.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP5_only_main_vocal.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoAggressive.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoDeReverb.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoNormal.pth --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/ && \
-    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/onnx_dereverb_By_FoxJoy/vocals.onnx --directory-prefix=/root/hay_say/temp_downloads/uvr5_weights/onnx_dereverb_By_FoxJoy/
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP2-%E4%BA%BA%E5%A3%B0vocals%2B%E9%9D%9E%E4%BA%BA%E5%A3%B0instrumentals.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP2_all_vocals.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP3_all_vocals.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP5-%E4%B8%BB%E6%97%8B%E5%BE%8B%E4%BA%BA%E5%A3%B0vocals%2B%E5%85%B6%E4%BB%96instrumentals.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP5_only_main_vocal.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoAggressive.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoDeReverb.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoNormal.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/onnx_dereverb_By_FoxJoy/vocals.onnx --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/onnx_dereverb_By_FoxJoy/
 
 # Create virtual environments for RVC and Hay Say's rvc_server.
 RUN python3.9 -m venv ~/hay_say/.venvs/rvc; \
@@ -68,6 +79,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install --timeout=300 --no-cache-dir --upgrade 
 RUN ~/hay_say/.venvs/rvc/bin/pip install \
     --timeout=300 \
     --no-cache-dir \
+    --extra-index-url https://download.pytorch.org/whl/cu118 \
     absl-py==1.4.0 \
     audioread==3.0.0 \
     colorama==0.4.6 \
@@ -117,22 +129,19 @@ RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
     hay_say_common==1.0.7 \
     jsonschema==4.19.1
 
-# Expose port 6578, the port that Hay Say uses for RVC.
-# Also expose port 7865, in case someone wants to use the original RVC UI.
-EXPOSE 6578
-EXPOSE 7865
-
-# Download RVC and checkout a specific commit that is known to work with this Docker file and with Hay Say.
+# Clone RVC and checkout a specific commit that is known to work with this Docker file and with Hay Say.
 # Important! The RVC code is modified a little later in this Dockerfile. If you update the commit hash here, be sure to
 # update the later section too, if needed (e.g. line numbers might change).
 RUN git clone -b main --single-branch -q https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI ~/hay_say/rvc
-WORKDIR /root/hay_say/rvc
+WORKDIR $HOME_DIR/hay_say/rvc
 RUN git reset --hard d97767494c83e01083030ebe21f7f4b296e41fab
 
-# Move the pretrained models to the expected directories.
-RUN mv /root/hay_say/temp_downloads/hubert/* /root/hay_say/rvc/ && \
-    mv /root/hay_say/temp_downloads/pretrained/* /root/hay_say/rvc/pretrained/ && \
-    mv /root/hay_say/temp_downloads/uvr5_weights/* /root/hay_say/rvc/uvr5_weights/
+# Clone the Hay Say interface code
+RUN git clone -b database-cache --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
+
+# Add command line functionality to RVC
+RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
+    mv ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
 
 # Modify RVC's code to add a command-line option for preventing its gradio server from automatically starting
 RUN sed -i '60 i\            cmd_opts.commandlinemode,\n' ~/hay_say/rvc/config.py && \
@@ -145,12 +154,15 @@ RUN sed -i '60 i\            cmd_opts.commandlinemode,\n' ~/hay_say/rvc/config.p
 RUN mkdir -p ~/hay_say/rvc/input/ && \
     mkdir -p ~/hay_say/rvc/output/
 
-# Add command line functionality to RVC
-RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
-    mv ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
+# Expose port 6578, the port that Hay Say uses for RVC.
+# Also expose port 7865, in case someone wants to use the original RVC UI.
+EXPOSE 6578
+EXPOSE 7865
 
-# Download the Hay Say interface code
-RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
+# Move the pretrained models to the expected directories.
+RUN mv ~/hay_say/temp_downloads/hubert/* ~/hay_say/rvc/ && \
+    mv ~/hay_say/temp_downloads/pretrained/* ~/hay_say/rvc/pretrained/ && \
+    mv ~/hay_say/temp_downloads/uvr5_weights/* ~/hay_say/rvc/uvr5_weights/
 
 # Execute the Hay Say interface code
-CMD ["/bin/sh", "-c", "/root/hay_say/.venvs/rvc_server/bin/python /root/hay_say/rvc_server/main.py --cache_implementation file"]
+CMD ["/bin/sh", "-c", "~/hay_say/.venvs/rvc_server/bin/python ~/hay_say/rvc_server/main.py --cache_implementation file"]
