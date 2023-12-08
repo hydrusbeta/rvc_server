@@ -63,6 +63,10 @@ RUN mkdir -p ~/hay_say/temp_downloads/uvr5_weights/ && \
     wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/VR-DeEchoNormal.pth --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/ && \
     wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/onnx_dereverb_By_FoxJoy/vocals.onnx --directory-prefix=$HOME_DIR/hay_say/temp_downloads/uvr5_weights/onnx_dereverb_By_FoxJoy/
 
+# Download the RMVPE weights
+RUN mkdir -p ~/hay_say/temp_downloads/rmvpe/ && \
+    wget https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.pt --directory-prefix=$HOME_DIR/hay_say/temp_downloads/rmvpe/
+
 # Create virtual environments for RVC and Hay Say's rvc_server.
 RUN python3.9 -m venv ~/hay_say/.venvs/rvc; \
     python3.9 -m venv ~/hay_say/.venvs/rvc_server
@@ -122,7 +126,10 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
     tqdm==4.65.0 \
     uc-micro-py==1.0.2 \
     uvicorn==0.22.0 \
-    Werkzeug==2.3.4
+    Werkzeug==2.3.4 \
+    torch==2.1.1+cu118 \
+    python-dotenv==1.0.0 \
+    av==11.0.0
 
 # Install the dependencies for the Hay Say interface code.
 RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
@@ -134,7 +141,7 @@ RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
 # update the later section too, if needed (e.g. line numbers might change).
 RUN git clone -b main --single-branch -q https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI ~/hay_say/rvc
 WORKDIR $HOME_DIR/hay_say/rvc
-RUN git reset --hard d97767494c83e01083030ebe21f7f4b296e41fab
+RUN git reset --hard ff093ad88f01428e822c04ad64518fda85699614
 
 # Clone the Hay Say interface code
 RUN git clone -b database-cache --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
@@ -144,11 +151,15 @@ RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_comma
     mv ~/hay_say/rvc_command_line/command_line_interface.py ~/hay_say/rvc/
 
 # Modify RVC's code to add a command-line option for preventing its gradio server from automatically starting
-RUN sed -i '60 i\            cmd_opts.commandlinemode,\n' ~/hay_say/rvc/config.py && \
-    sed -i '50 i\        parser.add_argument(\n            "--commandlinemode", action="store_true", help="Do not automatically launch the server when importing infer-web.py"\n        )\n' ~/hay_say/rvc/config.py && \
-    sed -i '31 i\            self.commandlinemode,' ~/hay_say/rvc/config.py && \
-    sed -i '1304,1991 s\^\    \' ~/hay_say/rvc/infer-web.py && \
-    sed -i '1304 i\if not config.commandlinemode:\n' ~/hay_say/rvc/infer-web.py
+RUN sed -i '102 i\            cmd_opts.commandlinemode,\n' ~/hay_say/rvc/configs/config.py && \
+    sed -i '91 i\        parser.add_argument(\n            "--commandlinemode", action="store_true", help="Do not automatically launch the server when importing infer-web.py"\n        )\n' ~/hay_say/rvc/configs/config.py && \
+    sed -i '59 i\            self.commandlinemode,' ~/hay_say/rvc/configs/config.py && \
+    sed -i '772,1520 s\^\    \' ~/hay_say/rvc/infer-web.py && \
+    sed -i '772 i\if not config.commandlinemode:\n' ~/hay_say/rvc/infer-web.py
+
+# The get_vc returns some values that are never used, and the collection of those values interferes with Hay Say.
+# Delete the unused logic.
+RUN sed -i '128,142d' ~/hay_say/rvc/infer/modules/vc/modules.py
 
 # Create directories that are used by the Hay Say interface code
 RUN mkdir -p ~/hay_say/rvc/input/ && \
@@ -160,9 +171,15 @@ EXPOSE 6578
 EXPOSE 7865
 
 # Move the pretrained models to the expected directories.
-RUN mv ~/hay_say/temp_downloads/hubert/* ~/hay_say/rvc/ && \
-    mv ~/hay_say/temp_downloads/pretrained/* ~/hay_say/rvc/pretrained/ && \
-    mv ~/hay_say/temp_downloads/uvr5_weights/* ~/hay_say/rvc/uvr5_weights/
+RUN mv ~/hay_say/temp_downloads/hubert/* ~/hay_say/rvc/assets/hubert/ && \
+    mv ~/hay_say/temp_downloads/pretrained/* ~/hay_say/rvc/assets/pretrained/ && \
+    mv ~/hay_say/temp_downloads/uvr5_weights/* ~/hay_say/rvc/assets/uvr5_weights/ && \
+    mv ~/hay_say/temp_downloads/rmvpe/* ~/hay_say/rvc/assets/rmvpe/
+
+# RVC expects the "weight_root" environment variable to point to the directory containing character models, and expects
+# "index_root" to point
+ENV weight_root=$HOME_DIR/hay_say/rvc/assets/weights
+ENV rmvpe_root=$HOME_DIR/hay_say/rvc/assets/rmvpe
 
 # Execute the Hay Say interface code
 CMD ["/bin/sh", "-c", "~/hay_say/.venvs/rvc_server/bin/python ~/hay_say/rvc_server/main.py --cache_implementation file"]

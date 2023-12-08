@@ -16,7 +16,7 @@ ARCHITECTURE_NAME = 'rvc'
 ARCHITECTURE_ROOT = os.path.join(hsc.ROOT_DIR, ARCHITECTURE_NAME)
 INPUT_COPY_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'input')
 OUTPUT_COPY_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'output')
-WEIGHTS_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'weights')
+WEIGHTS_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'assets', 'weights')
 INDICES_FOLDER = os.path.join(ARCHITECTURE_ROOT, 'logs')
 TEMP_FILE_EXTENSION = '.flac'
 
@@ -78,7 +78,7 @@ def register_methods(cache):
                     'properties': {
                         'Character': {'type': 'string'},
                         'Pitch Shift': {'type': 'integer'},
-                        'f0 Extraction Method': {'enum': ['crepe', 'harvest', 'parselmouth']},
+                        'f0 Extraction Method': {'enum': ['crepe', 'harvest', 'parselmouth', 'rmvpe']},
                         'Index Ratio': {'type': 'number', 'minimum': 0, 'maximum': 1},
                         'Filter Radius': {'type': 'integer', 'minimum': 0},
                         'Voice Envelepe Mix Ratio': {'type': 'number', 'minimum': 0, 'maximum': 1},
@@ -140,7 +140,8 @@ def register_methods(cache):
     # Map display labels to command line options using this dictionary.
     f0_command_line_option_from_display_option = {'crepe': 'crepe',
                                                   'harvest': 'harvest',
-                                                  'parselmouth': 'pm'}
+                                                  'parselmouth': 'pm',
+                                                  'rmvpe': 'rmvpe'}
 
 
     def execute_program(character, input_filename_sans_extension, pitch_shift, f0_method, index_ratio, filter_radius,
