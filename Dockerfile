@@ -133,7 +133,7 @@ RUN ~/hay_say/.venvs/rvc/bin/pip install \
 
 # Install the dependencies for the Hay Say interface code.
 RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
-    hay_say_common==1.0.7 \
+    hay_say_common==1.0.8 \
     jsonschema==4.19.1
 
 # Clone RVC and checkout a specific commit that is known to work with this Docker file and with Hay Say.
@@ -141,10 +141,10 @@ RUN ~/hay_say/.venvs/rvc_server/bin/pip install --timeout=300 --no-cache-dir \
 # update the later section too, if needed (e.g. line numbers might change).
 RUN git clone -b main --single-branch -q https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI ~/hay_say/rvc
 WORKDIR $HOME_DIR/hay_say/rvc
-RUN git reset --hard ff093ad88f01428e822c04ad64518fda85699614
+RUN git reset --hard ff093ad88f01428e822c04ad64518fda85699614 # Nov 12, 2023
 
 # Clone the Hay Say interface code
-RUN git clone -b database-cache --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
+RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_server ~/hay_say/rvc_server
 
 # Add command line functionality to RVC
 RUN git clone -b main --single-branch -q https://github.com/hydrusbeta/rvc_command_line ~/hay_say/rvc_command_line && \
